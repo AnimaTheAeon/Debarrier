@@ -7,16 +7,21 @@ services:
     restart: unless-stopped
     environment:
       - LOG_LEVEL=info
+      # Container Manager may start this without a home folder, which
+      # leaves it as "/" (read-only), and Chrome's driver can't start.
+      - HOME=/tmp
     ports:
       - "127.0.0.1:8192:8191"
     tmpfs:
-      - /tmp:size=256M,mode=1777
+      - /tmp:exec,size=1G,mode=1777
 
   byparr:
     image: ghcr.io/thephaseless/byparr:latest
     container_name: debarrier-byparr
     restart: unless-stopped
     shm_size: "1gb"
+    environment:
+      - HOME=/tmp
     ports:
       - "127.0.0.1:8193:8191"
     tmpfs:

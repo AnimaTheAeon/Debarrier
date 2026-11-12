@@ -3,6 +3,10 @@
 Each version's "- " lines become its release notes on GitHub.
 Add a section here before bumping VERSION.
 
+## 1.0.3
+
+- Fixed: FlareSolverr kept stopping and restarting ("Permission denied: '/.local'"). Both engines now get a home folder they can write to
+
 ## 1.0.2
 
 - Updates: DeBarrier checks GitHub every 6 hours and installs new versions by itself (turn this off in Settings → Updates)
