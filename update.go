@@ -287,7 +287,7 @@ func runUpdate(args []string) int {
 		}
 	}
 	if os.Geteuid() != 0 && os.Getenv("DEBARRIER_UPDATE_TEST") != "1" {
-		fmt.Fprintln(os.Stderr, "Installing updates needs root. Run this from DSM Task Scheduler with User: root.")
+		fmt.Fprintln(os.Stderr, "DeBarrier update: this task must run as root. In Task Scheduler, edit the task and set General → User to root.")
 		return 1
 	}
 	writeShared(fileTaskRun, taskFile{Time: time.Now().Unix()})

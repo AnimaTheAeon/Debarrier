@@ -3,6 +3,11 @@
 Each version's "- " lines become its release notes on GitHub.
 Add a section here before bumping VERSION.
 
+## 1.0.4
+
+- Settings no longer says "Installing…" while the update task hasn't been set up; it says the update is waiting for the task
+- Shows when an install is taking too long
+
 ## 1.0.3
 
 - Fixed: FlareSolverr kept stopping and restarting ("Permission denied: '/.local'"). Both engines now get a home folder they can write to
