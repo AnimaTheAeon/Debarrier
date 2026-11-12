@@ -1,0 +1,57 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  spk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Test
+        run: go vet ./... && go test ./...
+      - name: Build .spk
+        id: spk
+        run: |
+          SPK=$(BUILD_NUMBER=$(printf '%04d' ${{ github.run_number }}) ./build-spk.sh dist)
+          echo "file=$SPK" >> "$GITHUB_OUTPUT"
+          echo "version=$(tr -d ' \r\n' < VERSION)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: debarrier-synology-x86_64
+          path: dist/*.spk
+      - name: Release notes from CHANGES.md
+        run: |
+          awk -v v="## ${{ steps.spk.outputs.version }}" '$0==v{on=1;next} /^## /{on=0} on' CHANGES.md > notes.md
+          printf '\n**Install:** Package Center → Manual Install → the .spk below. Already installed with updates on? DeBarrier installs this by itself.\n' >> notes.md
+          cat notes.md
+      # Pushing a new VERSION to main publishes v<version>. Same version: no new release.
+      - name: Check for existing release
+        id: rel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "v${{ steps.spk.outputs.version }}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Publish release
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.rel.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.spk.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: DeBarrier v${{ steps.spk.outputs.version }}
+          body_path: notes.md
+          files: ${{ steps.spk.outputs.file }}
+          make_latest: true

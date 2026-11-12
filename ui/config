@@ -1,0 +1,21 @@
+{
+	"DeBarrier.js": {
+		"DeBarrier.AppInstance": {
+			"type": "app",
+			"title": "app:name",
+			"desc": "app:description",
+			"icon": "images/debarrier_{0}.png",
+			"texts": "texts",
+			"allowMultiInstance": false,
+			"allUsers": false,
+			"appWindow": "DeBarrier.AppWindow",
+			"depend": ["DeBarrier.AppWindow"]
+		},
+		"DeBarrier.AppWindow": {
+			"type": "lib",
+			"title": "app:name",
+			"icon": "images/debarrier_{0}.png",
+			"texts": "texts"
+		}
+	}
+}

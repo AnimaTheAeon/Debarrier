@@ -1,0 +1,48 @@
+#!/bin/sh
+# DSM service control for DeBarrier. Container Manager starts and stops
+# the engines (the "debarrier" project) alongside the package.
+PID_FILE="$SYNOPKG_PKGVAR/debarrier.pid"
+BIN="$SYNOPKG_PKGDEST/bin/debarrier"
+
+is_running() {
+	[ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null
+}
+
+case "$1" in
+	start)
+		is_running && exit 0
+		export SYNOPKG_PKGVAR
+		nohup "$BIN" daemon >> "$SYNOPKG_PKGVAR/service.out" 2>&1 < /dev/null &
+		echo $! > "$PID_FILE"
+		i=0
+		while [ $i -lt 20 ]; do
+			is_running && exit 0
+			sleep 0.25
+			i=$((i + 1))
+		done
+		exit 1
+		;;
+	stop)
+		if is_running; then
+			PID="$(cat "$PID_FILE")"
+			kill -TERM "$PID" 2>/dev/null
+			i=0
+			while [ $i -lt 20 ] && kill -0 "$PID" 2>/dev/null; do
+				sleep 0.25
+				i=$((i + 1))
+			done
+			kill -KILL "$PID" 2>/dev/null
+		fi
+		rm -f "$PID_FILE"
+		exit 0
+		;;
+	status)
+		is_running && exit 0
+		exit 3
+		;;
+	log)
+		echo "$SYNOPKG_PKGVAR/debarrier.log"
+		exit 0
+		;;
+esac
+exit 0

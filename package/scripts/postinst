@@ -1,0 +1,11 @@
+#!/bin/sh
+mkdir -p "$SYNOPKG_PKGVAR"
+{
+cat << 'NOTE'
+<p style="font-weight:bold;">DeBarrier is installed</p>
+<p>Container Manager now runs FlareSolverr and Byparr as a project called <b>debarrier</b>. If they're still downloading, DeBarrier shows them as <b>Not running</b> until they're ready.</p>
+<p>Open <b>DeBarrier</b> from the main menu. Its Status page shows the address to put into Materia under <b>Config</b> &rarr; <b>Proxies</b> &rarr; <b>FlareSolverr</b>.</p>
+<p>If you already run a FlareSolverr container on port 8191, stop it in Container Manager. DeBarrier replaces it.</p>
+NOTE
+} >> "$SYNOPKG_TEMP_LOGFILE"
+exit 0

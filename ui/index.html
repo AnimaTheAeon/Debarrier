@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DeBarrier</title>
+<link rel="stylesheet" href="debarrier.css?v=@VERSION@">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <!-- Pointing hand cursor (original artwork). -->
+    <symbol id="hand" viewBox="0 0 34 22">
+      <rect x="2" y="6" width="34" height="16" rx="5" fill="rgba(0,0,0,.35)" transform="translate(-1 0)"/>
+      <rect x="1" y="4" width="8" height="15" rx="2" fill="#c4c8d6" stroke="#1e1e28" stroke-width="1.4"/>
+      <rect x="7" y="3" width="15" height="16" rx="5" fill="#fafafc" stroke="#1e1e28" stroke-width="1.4"/>
+      <rect x="17" y="5" width="16" height="6" rx="3" fill="#fafafc" stroke="#1e1e28" stroke-width="1.4"/>
+      <rect x="17" y="11" width="7" height="4" rx="2" fill="#fafafc" stroke="#1e1e28" stroke-width="1.4"/>
+      <rect x="17" y="15" width="7" height="4" rx="2" fill="#fafafc" stroke="#1e1e28" stroke-width="1.4"/>
+      <path d="M10 7 L16 8" stroke="#c4c8d6" stroke-width="1.2"/>
+    </symbol>
+  </defs>
+</svg>
+
+<!-- Box of X: home screen with the orb -->
+<div id="g-home" class="g-only">
+  <div class="g-orb-wrap">
+    <div class="g-ring"></div>
+    <svg class="g-orb" viewBox="0 0 400 400" aria-hidden="true">
+      <defs>
+        <radialGradient id="g-sphere" cx="45%" cy="40%" r="62%">
+          <stop offset="0" stop-color="#b6ff4a"/>
+          <stop offset="0.45" stop-color="#5cc81e"/>
+          <stop offset="0.8" stop-color="#2a8a10"/>
+          <stop offset="1" stop-color="#145a08"/>
+        </radialGradient>
+        <radialGradient id="g-shine" cx="50%" cy="50%" r="50%">
+          <stop offset="0" stop-color="#fff" stop-opacity="0.75"/>
+          <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+        </radialGradient>
+        <filter id="g-glow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="10"/></filter>
+      </defs>
+      <circle cx="200" cy="200" r="182" fill="none" stroke="#8de83a" stroke-opacity="0.35" stroke-width="2"/>
+      <circle cx="200" cy="200" r="170" fill="none" stroke="#8de83a" stroke-opacity="0.7" stroke-width="3"/>
+      <circle cx="200" cy="200" r="160" fill="#7ee030" opacity="0.35" filter="url(#g-glow)"/>
+      <circle cx="200" cy="200" r="150" fill="url(#g-sphere)"/>
+      <ellipse cx="150" cy="255" rx="72" ry="50" fill="#d6ff9a" opacity="0.13"/>
+      <ellipse cx="260" cy="290" rx="88" ry="38" fill="#d6ff9a" opacity="0.12"/>
+      <ellipse cx="160" cy="125" rx="52" ry="40" fill="url(#g-shine)"/>
+      <!-- a barrier hexagon, broken open -->
+      <g fill="none" stroke="#efffd0" stroke-width="6" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M200 112 L276 156 L276 200"/>
+        <path d="M276 226 L276 244 L200 288 L124 244 L124 156 L178 125"/>
+        <path d="M244 175 L222 200 L244 222 L216 248" stroke-width="4"/>
+      </g>
+      <circle cx="200" cy="200" r="14" fill="#fbffe8"/>
+    </svg>
+  </div>
+  <nav id="g-menu"></nav>
+  <div class="g-status g-status-home"><i class="g-led"></i><div><div class="g-top"></div><div class="g-bottom"></div></div></div>
+  <button class="g-hint g-select" id="g-select"><span class="g-key">ENTER</span>SELECT</button>
+</div>
+
+<div class="layout">
+  <div id="g-head" class="g-only">
+    <div id="g-title"></div>
+    <div class="g-status"><i class="g-led"></i><div><div class="g-top"></div><div class="g-bottom"></div></div></div>
+  </div>
+  <section id="main" class="win">
+
+    <!-- Status -->
+    <div class="page active" data-page="status">
+      <div class="page-head"><h1>Status</h1><span class="grow"></span></div>
+      <p class="sub">Materia sends Cloudflare-protected sites here, and DeBarrier hands them to an engine to get through.</p>
+      <div class="divider"></div>
+      <div class="scroll">
+        <div id="port-error" class="notice" style="display:none"></div>
+        <div id="engines"></div>
+        <div class="section" style="margin-top:14px">
+          <span class="label">TRY A SITE</span>
+          <div class="row"><input type="text" id="test-url" placeholder="https://a-site-behind-cloudflare.com" autocomplete="off" style="flex:1;min-width:220px"><button id="test-go">Try it</button></div>
+          <div id="test-result" class="small" style="margin:4px 0 6px"></div>
+        </div>
+        <div class="section">
+          <span class="label">HOOK UP MATERIA</span>
+          <div class="row">Address <input type="text" id="addr" class="command" readonly style="width:auto;flex:1;min-width:220px;margin:0"><button id="addr-copy" class="small">Copy</button></div>
+          <ol class="steps">
+            <li>In Materia, open <b>Config</b> &rarr; <b>Proxies</b> &rarr; <b>Add proxy</b> &rarr; <b>FlareSolverr</b>.</li>
+            <li>Paste the address into <b>Host</b>. If Materia runs on this NAS too, <b id="addr-local"></b> also works.</li>
+            <li>Give it a tag, such as <b>cloudflare</b>, and click <b>Test</b>, then <b>Save</b>.</li>
+            <li>Add the same tag to each indexer that's behind Cloudflare. Only tagged indexers go through DeBarrier.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity -->
+    <div class="page" data-page="activity">
+      <div class="page-head">
+        <h1>Activity</h1><span class="grow"></span>
+        <button id="clear-activity">Clear</button>
+      </div>
+      <p class="sub">Sites Materia asked for, newest first. Passkeys and the rest of each address are never stored.</p>
+      <div class="divider"></div>
+      <div class="scroll">
+        <table>
+          <thead><tr><th>Result</th><th>Site</th><th>Engine</th><th>Took</th><th>When</th></tr></thead>
+          <tbody id="entries"></tbody>
+        </table>
+        <div id="entries-empty" class="empty"><h2>Nothing yet</h2>Searches from Materia's tagged indexers will show up here.</div>
+      </div>
+    </div>
+
+    <!-- Settings -->
+    <div class="page" data-page="config">
+      <div class="page-head"><h1>Settings</h1><span class="saved">Saved</span><span class="grow"></span><button id="view-log">View Log</button></div>
+      <p class="sub">Changes take effect right away.</p>
+      <div class="divider"></div>
+      <div class="scroll">
+        <div class="section">
+          <span class="label">ENGINE</span>
+          <div class="row" id="engine-pick"><button data-engine="flaresolverr">FlareSolverr</button><button data-engine="byparr">Byparr</button></div>
+          <div class="row dim small">Both understand the same requests, so Materia doesn't need changing when you switch. Byparr usually gets through newer Cloudflare checks more often; FlareSolverr is faster when it works.</div>
+          <label class="check"><input type="checkbox" data-key="fallback"><span class="box"></span>If it can't get through, try the other engine</label>
+          <div class="row small"><span id="remembered" class="dim"></span><span class="grow"></span><button id="forget-sites" class="small">Forget</button></div>
+        </div>
+        <div class="section">
+          <span class="label">PORT</span>
+          <div class="row">Materia connects on port <input type="number" min="1024" max="65535" data-key="port"> <span class="dim small">8191 is the usual FlareSolverr port. Change it only if something else on the NAS already uses 8191.</span></div>
+        </div>
+        <div class="section">
+          <span class="label">UPDATES</span>
+          <div class="row"><span id="update-state"></span><span class="grow"></span><button id="update-check" class="small">Check now</button><button id="update-now" class="small">Update now</button></div>
+          <label class="check"><input type="checkbox" data-key="auto_update"><span class="box"></span>Install updates from GitHub automatically</label>
+          <div class="row small" id="update-last"></div>
+          <div id="update-setup" class="notice" style="display:none">
+            <b>One-time setup.</b> DSM only lets packages install updates through a scheduled task, so DeBarrier needs one:
+            <ol>
+              <li><b>Control Panel</b> &rarr; <b>Task Scheduler</b> &rarr; <b>Create</b> &rarr; <b>Scheduled Task</b> &rarr; <b>User-defined script</b></li>
+              <li><b>General:</b> name it <i>DeBarrier update</i>, set <b>User</b> to <b>root</b></li>
+              <li><b>Schedule:</b> <b>Run on the following days: Daily</b>. Under <b>Time</b>, set <b>Frequency</b> to <b>Every 5 minutes</b> (first run 00:00, last run 23:55)</li>
+              <li><b>Task Settings</b> &rarr; <b>Run command</b>, paste:<br><input type="text" id="update-command" class="command" readonly></li>
+              <li>Click <b>OK</b>, and confirm with your DSM password if asked.</li>
+            </ol>
+            The task only does something when there's an update to install, so running it every 5 minutes costs nothing. This box goes away once it has run.
+          </div>
+        </div>
+        <div class="section">
+          <span class="label">LOOK</span>
+          <div class="row" id="theme-pick"><button data-theme="ff">FFVII menu</button><button data-theme="green">Box of X</button></div>
+        </div>
+        <div class="divider"></div>
+        <div class="row dim small"><span id="about"></span></div>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="page" data-page="log">
+      <div class="page-head"><h1>Log</h1><span class="grow"></span><button id="log-back">Back to Settings</button></div>
+      <p class="sub">What DeBarrier has been doing.</p>
+      <div class="divider"></div>
+      <div id="log" class="scroll mono"></div>
+    </div>
+  </section>
+
+  <aside class="side">
+    <nav id="menu" class="win"></nav>
+    <div class="spacer"></div>
+    <div class="win">
+      <div class="info-row"><span class="label">Solved</span><span id="info-solved">0</span></div>
+      <div class="info-row"><span class="label">Failed</span><span id="info-failed">0</span></div>
+      <div class="info-row small dim" style="font-size:12px;justify-content:flex-end">today</div>
+    </div>
+  </aside>
+
+  <footer id="statusbar" class="win">Connecting…</footer>
+  <div id="g-foot" class="g-only"><button class="g-hint" id="g-back"><span class="g-key">ESC</span>BACK</button></div>
+</div>
+
+<div id="overlay" class="overlay-msg"><div class="win" style="max-width:460px"><h1 style="margin:0 0 6px;font-size:22px" id="overlay-title"></h1><div id="overlay-text"></div></div></div>
+
+<script src="app.js?v=@VERSION@"></script>
+</body>
+</html>
