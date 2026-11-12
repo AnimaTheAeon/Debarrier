@@ -3,6 +3,10 @@
 Each version's "- " lines become its release notes on GitHub.
 Add a section here before bumping VERSION.
 
+## 1.0.5
+
+- Fixed: FlareSolverr still stopping on start ("Permission denied: '/app/chromedriver'"). It now runs from its own writable copy, whichever user Container Manager starts it as
+
 ## 1.0.4
 
 - Settings no longer says "Installing…" while the update task hasn't been set up; it says the update is waiting for the task

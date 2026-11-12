@@ -5,6 +5,17 @@ services:
     image: ghcr.io/flaresolverr/flaresolverr:latest
     container_name: debarrier-flaresolverr
     restart: unless-stopped
+    # Container Manager runs this as a different user than the one that owns
+    # /app, and FlareSolverr edits /app/chromedriver when it starts. So start
+    # from a copy in /tmp that whoever runs it can write to.
+    command:
+      - sh
+      - -c
+      - >-
+        rm -rf /tmp/app && cp -r /app /tmp/app &&
+        sed -i 's#"/app/chromedriver"#"/tmp/app/chromedriver"#g' /tmp/app/utils.py &&
+        (cp /package.json /tmp/app/package.json 2>/dev/null || true) &&
+        cd /tmp/app && exec /usr/local/bin/python -u /tmp/app/flaresolverr.py
     environment:
       - LOG_LEVEL=info
       # Container Manager may start this without a home folder, which
