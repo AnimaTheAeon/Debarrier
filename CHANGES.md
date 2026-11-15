@@ -3,6 +3,10 @@
 Each version's "- " lines become its release notes on GitHub.
 Add a section here before bumping VERSION.
 
+## 1.0.9
+
+- Activity's column headings (Result, Site, Engine, Took, When) stand out as a heading bar, in every look
+
 ## 1.0.8
 
 - Update now also replaces the window's own screens, so what you see matches the version that was installed (a new look no longer needs a hand-installed .spk). Install this version's .spk once by hand to turn it on
