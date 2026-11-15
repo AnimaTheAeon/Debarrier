@@ -28,14 +28,17 @@ Stop any FlareSolverr container you already run on port 8191 first, or pick anot
 DeBarrier checks this repo's GitHub Releases every 6 hours. Settings → Updates shows what's out, with **Check now**
 and **Update now** buttons and an "install automatically" switch (on by default).
 
-DSM only lets packages install updates as root through Task Scheduler, so it needs a one-time task. DeBarrier shows
-these steps in Settings until the task has run:
-Control Panel → Task Scheduler → Create → Scheduled Task → User-defined script, User **root**, Daily with Frequency
-**Every 5 minutes**, command `/var/packages/DeBarrier/target/bin/debarrier update`. The task does nothing unless
-there's an update to install. It always asks GitHub itself, checks the download against GitHub's checksum, and then
-installs it with `synopkg`. A failed automatic install isn't retried for 6 hours unless you press Update now.
+**Update now** works by itself: DeBarrier downloads the new version, checks it against GitHub's checksum and restarts on
+it. If the new version won't start, it goes back to the one that was installed.
 
-Installing a new DeBarrier version also pulls the newest FlareSolverr and Byparr images.
+To also have DSM install updates while you're away (and refresh the Settings window itself), add one optional Task
+Scheduler task: Control Panel → Task Scheduler → Create → Scheduled Task → User-defined script, User **root**, Daily with
+Frequency **Every 5 minutes**, command `/var/packages/DeBarrier/target/bin/debarrier update`. The task does nothing
+unless there's an update to install. It always asks GitHub itself, checks the download against GitHub's checksum, and
+then installs it with `synopkg`. A failed automatic install isn't retried for 6 hours unless you press Update now.
+DeBarrier shows these steps in Settings when "install automatically" is on and the task hasn't run.
+
+Installing a new package (by the task or by hand) also pulls the newest FlareSolverr and Byparr images; Update now only swaps DeBarrier itself.
 
 ## How it fits together
 

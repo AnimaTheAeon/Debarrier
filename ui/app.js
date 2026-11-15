@@ -266,7 +266,11 @@ function renderStatus() {
   renderStatusBar();
 }
 
+let seenVersion = "";
 function renderUpdate(u) {
+  // The service came back on a new version after Update now: reload the page.
+  if (seenVersion && u.current && u.current !== seenVersion) { location.reload(); return; }
+  if (u.current) seenVersion = u.current;
   const st = $("#update-state");
   const checked = u.checked_at ? ` <span class="dim small">· checked ${ago(u.now - u.checked_at)}</span>` : "";
   const cur = `Installed ${esc(u.current)}`;
@@ -282,7 +286,22 @@ function renderUpdate(u) {
   $("#update-check").disabled = !!u.checking;
   const now = $("#update-now");
   now.style.display = u.available ? "" : "none";
+  const pr = u.progress;
+  const busy = !!(pr && pr.phase !== "failed");
+  if (busy) now.style.display = "none";
   now.disabled = !!u.requested;
+  const prow = $("#update-progress");
+  prow.style.display = pr ? "" : "none";
+  if (pr) {
+    const mb = (n) => (n / 1048576).toFixed(1);
+    let frac = 0, text = "";
+    if (pr.phase === "download") { frac = pr.total ? 0.02 + 0.8 * Math.min(1, pr.done / pr.total) : 0.1; text = `Downloading ${esc(pr.to)}: ${mb(pr.done)}${pr.total ? " of " + mb(pr.total) : ""} MB`; }
+    else if (pr.phase === "verify") { frac = 0.88; text = "Checking the download…"; }
+    else if (pr.phase === "restart") { frac = 0.96; text = `Restarting on ${esc(pr.to)}. This page reloads by itself.`; }
+    else { text = `<span class="bad">Update failed: ${esc(pr.message)}</span>`; }
+    $("#update-bar").style.width = (frac * 100).toFixed(1) + "%";
+    $("#update-step").innerHTML = text;
+  }
 
   const last = u.last_install;
   const lastEl = $("#update-last");
@@ -293,7 +312,7 @@ function renderUpdate(u) {
       : `<span class="label">LAST UPDATE</span>&nbsp; <span class="bad">${when}, to ${esc(last.to)}: ${esc(last.message)}</span>`;
   } else lastEl.innerHTML = "";
   // Show the setup steps while the task isn't running and something needs it.
-  const needTask = (u.auto || u.requested || updateClicked) && !u.task_ok;
+  const needTask = (u.auto || (!u.can_install_now && (u.requested || updateClicked))) && !u.task_ok;
   $("#update-setup").style.display = needTask ? "" : "none";
   const cmd = $("#update-command");
   if (cmd.value !== u.command) cmd.value = u.command || "";

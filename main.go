@@ -25,6 +25,7 @@ func main() {
 	switch mode {
 	case "daemon":
 		runDaemon()
+		os.Exit(exitCode)
 	case "cgi":
 		runCGI()
 	case "update":

@@ -7,6 +7,13 @@ package main
 // packages through a Task Scheduler task. That task runs `debarrier update`
 // every 5 minutes; it does nothing unless there's an update to install
 // (automatic updates are on, or someone pressed Update now).
+//
+// "Update now" needs no task when the service was started by debarrier-run.sh
+// (it sets DEBARRIER_UPDATE_DIR): the service downloads the package itself,
+// unpacks the program into <dir>/next and exits with restartCode, and the
+// script swaps it in and starts it again. The scheduled task stays for
+// hands-off updates, and it also refreshes the window's own files, which only
+// a real package install can replace.
 
 import (
 	"crypto/sha256"
@@ -38,6 +45,7 @@ type Release struct {
 	SpkURL  string `json:"spk_url"`
 	SpkName string `json:"spk_name"`
 	SHA256  string `json:"sha256"`
+	Size    int64  `json:"size"`
 	Notes   string `json:"notes"`
 }
 
@@ -125,6 +133,7 @@ func parseRelease(data []byte) (*Release, error) {
 			Name   string `json:"name"`
 			URL    string `json:"browser_download_url"`
 			Digest string `json:"digest"`
+			Size   int64  `json:"size"`
 		} `json:"assets"`
 	}
 	if err := json.Unmarshal(data, &j); err != nil {
@@ -135,7 +144,7 @@ func parseRelease(data []byte) (*Release, error) {
 	}
 	for _, a := range j.Assets {
 		if strings.HasSuffix(a.Name, "-x86_64.spk") && a.URL != "" {
-			r := &Release{Version: strings.TrimLeft(j.Tag, "vV"), Page: j.URL, SpkURL: a.URL, SpkName: filepath.Base(a.Name), Notes: j.Body}
+			r := &Release{Version: strings.TrimLeft(j.Tag, "vV"), Page: j.URL, SpkURL: a.URL, SpkName: filepath.Base(a.Name), Notes: j.Body, Size: a.Size}
 			if d, ok := strings.CutPrefix(a.Digest, "sha256:"); ok {
 				r.SHA256 = strings.ToLower(d)
 			}
@@ -160,9 +169,11 @@ func latestRelease() (*Release, error) {
 // ---------- the service's side ----------
 
 type updater struct {
-	mu       sync.Mutex
-	checking bool
-	kick     chan struct{}
+	mu         sync.Mutex
+	checking   bool
+	installing bool
+	progress   *Progress
+	kick       chan struct{}
 }
 
 var upd = &updater{kick: make(chan struct{}, 1)}
@@ -235,7 +246,11 @@ func updateStatus(auto bool) map[string]any {
 		"command":    updateCommand(),
 		"task_seen":  task.Time,
 		// The task runs every 5 minutes; 30 minutes of silence means it isn't set up (or is off).
-		"task_ok": task.Time > 0 && now-task.Time < 30*60,
+		"task_ok":         task.Time > 0 && now-task.Time < 30*60,
+		"can_install_now": canInstallNow(),
+	}
+	if p := upd.progressNow(); p != nil {
+		out["progress"] = p
 	}
 	if c.Latest != nil {
 		out["latest"] = c.Latest.Version
@@ -260,6 +275,12 @@ func requestInstall() (map[string]any, string) {
 	readJSON(fileCheck, &c)
 	if c.Latest == nil || !isNewer(c.Latest.Version, version) {
 		return nil, "You already have the newest version"
+	}
+	if canInstallNow() {
+		if msg := startInstallNow(c.Latest); msg != "" {
+			return nil, msg
+		}
+		return map[string]any{"ok": true}, ""
 	}
 	if err := writeJSON(fileRequest, requestFile{Version: c.Latest.Version, Time: time.Now().Unix()}); err != nil {
 		return nil, "Couldn't save the request: " + err.Error()
@@ -426,6 +447,183 @@ func install(r *Release) error {
 	}
 	if wasRunning {
 		_ = exec.Command(synopkg, "start", packageName).Run()
+	}
+	return nil
+}
+
+// ---------- installing from the window (no root) ----------
+
+// restartCode tells debarrier-run.sh "start me again".
+const restartCode = 75
+
+// restartReq is closed-over by the daemon's main loop: an update is unpacked.
+var restartReq = make(chan struct{}, 1)
+
+// exitCode is what main exits with after the daemon has stopped.
+var exitCode = 0
+
+// Progress is what Update now is doing, for the window.
+type Progress struct {
+	To      string `json:"to"`
+	Phase   string `json:"phase"` // download, verify, restart, failed
+	Done    int64  `json:"done"`
+	Total   int64  `json:"total"`
+	Message string `json:"message,omitempty"`
+}
+
+func (u *updater) setProgress(p *Progress) {
+	u.mu.Lock()
+	u.progress = p
+	u.mu.Unlock()
+}
+
+func (u *updater) progressNow() *Progress {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	if u.progress == nil {
+		return nil
+	}
+	p := *u.progress
+	return &p
+}
+
+func updateDir() string { return strings.TrimSpace(os.Getenv("DEBARRIER_UPDATE_DIR")) }
+
+// canInstallNow is true when debarrier-run.sh started this service.
+func canInstallNow() bool { return updateDir() != "" }
+
+// startInstallNow downloads and unpacks the release in the background, then
+// asks the daemon to exit so debarrier-run.sh can swap it in. It returns a
+// message when it can't start.
+func startInstallNow(r *Release) string {
+	upd.mu.Lock()
+	if upd.installing {
+		upd.mu.Unlock()
+		return "An update is already running"
+	}
+	upd.installing = true
+	upd.progress = &Progress{To: r.Version, Phase: "download", Total: r.Size}
+	upd.mu.Unlock()
+	go func() {
+		from := version
+		logf("Updating DeBarrier %s -> %s", from, r.Version)
+		if err := installInto(r, updateDir()); err != nil {
+			logf("Update to %s failed: %v", r.Version, err)
+			recordResult(false, from, r.Version, err.Error())
+			upd.mu.Lock()
+			upd.installing = false
+			upd.progress = &Progress{To: r.Version, Phase: "failed", Message: err.Error()}
+			upd.mu.Unlock()
+			return
+		}
+		recordResult(true, from, r.Version, "Updated to "+r.Version)
+		upd.setProgress(&Progress{To: r.Version, Phase: "restart", Done: 1, Total: 1})
+		time.Sleep(2 * time.Second) // let the window see "restart"
+		select {
+		case restartReq <- struct{}{}:
+		default:
+		}
+	}()
+	return ""
+}
+
+func runTar(args ...string) error {
+	out, err := exec.Command("tar", args...).CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("Couldn't unpack the download: %s", strings.TrimSpace(string(out)))
+	}
+	return nil
+}
+
+// installInto downloads the package, checks it and leaves the new program in dir/next.
+func installInto(r *Release, dir string) error {
+	work := filepath.Join(dir, "work")
+	_ = os.RemoveAll(work)
+	if err := os.MkdirAll(work, 0o755); err != nil {
+		return err
+	}
+	defer os.RemoveAll(work)
+	spk := filepath.Join(work, "download.spk")
+	cmd := exec.Command("curl", "-fsSL", "--retry", "2", "--connect-timeout", "20", "--max-time", "900", "-A", "DeBarrier/"+version, "-o", spk, r.SpkURL)
+	var stderr strings.Builder
+	cmd.Stderr = &stderr
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("Download failed: couldn't run curl: %v", err)
+	}
+	done := make(chan error, 1)
+	go func() { done <- cmd.Wait() }()
+	tick := time.NewTicker(400 * time.Millisecond)
+	defer tick.Stop()
+wait:
+	for {
+		select {
+		case err := <-done:
+			if err != nil {
+				msg := strings.TrimSpace(stderr.String())
+				if msg == "" {
+					msg = "couldn't reach GitHub"
+				}
+				return fmt.Errorf("Download failed: %s", msg)
+			}
+			break wait
+		case <-tick.C:
+			var got int64
+			if st, err := os.Stat(spk); err == nil {
+				got = st.Size()
+			}
+			upd.setProgress(&Progress{To: r.Version, Phase: "download", Done: got, Total: r.Size})
+		}
+	}
+	st, err := os.Stat(spk)
+	if err != nil {
+		return err
+	}
+	upd.setProgress(&Progress{To: r.Version, Phase: "verify", Done: st.Size(), Total: st.Size()})
+	if r.SHA256 != "" {
+		f, err := os.Open(spk)
+		if err != nil {
+			return err
+		}
+		h := sha256.New()
+		_, err = io.Copy(h, f)
+		f.Close()
+		if err != nil {
+			return err
+		}
+		if hex.EncodeToString(h.Sum(nil)) != r.SHA256 {
+			return errors.New("The download didn't match GitHub's checksum. Nothing was changed.")
+		}
+	}
+	outer := filepath.Join(work, "outer")
+	staged := filepath.Join(work, "staged")
+	for _, d := range []string{outer, staged} {
+		if err := os.MkdirAll(d, 0o755); err != nil {
+			return err
+		}
+	}
+	if err := runTar("-xf", spk, "-C", outer); err != nil {
+		return err
+	}
+	if err := runTar("-xzf", filepath.Join(outer, "package.tgz"), "-C", staged); err != nil {
+		return err
+	}
+	exe := filepath.Join(staged, "bin", "debarrier")
+	if fi, err := os.Stat(exe); err != nil || fi.IsDir() {
+		return errors.New("The download has no DeBarrier program in it. Nothing was changed.")
+	}
+	_ = os.Chmod(exe, 0o755)
+	// The new program must start and be the version GitHub listed.
+	said, err := exec.Command(exe, "version").Output()
+	if err != nil {
+		return fmt.Errorf("The new program won't start: %v", err)
+	}
+	if strings.TrimSpace(string(said)) != r.Version {
+		return errors.New("The downloaded program isn't the version GitHub listed. Nothing was changed.")
+	}
+	next := filepath.Join(dir, "next")
+	_ = os.RemoveAll(next)
+	if err := os.Rename(staged, next); err != nil {
+		return fmt.Errorf("Couldn't put the update in place: %v", err)
 	}
 	return nil
 }

@@ -131,10 +131,11 @@
         <div class="section">
           <span class="label">UPDATES</span>
           <div class="row"><span id="update-state"></span><span class="grow"></span><button id="update-check" class="small">Check now</button><button id="update-now" class="small">Update now</button></div>
+          <div class="row small" id="update-progress" style="display:none"><div class="bar"><i id="update-bar"></i></div><span id="update-step"></span></div>
           <label class="check"><input type="checkbox" data-key="auto_update"><span class="box"></span>Install updates from GitHub automatically</label>
           <div class="row small" id="update-last"></div>
           <div id="update-setup" class="notice" style="display:none">
-            <b>One-time setup.</b> DSM only lets packages install updates through a scheduled task, so DeBarrier needs one:
+            <b>Needed for automatic updates.</b> <b>Update now</b> works by itself. To have DSM install new versions while you're away (this also refreshes the window you're looking at), add a scheduled task:
             <ol>
               <li><b>Control Panel</b> &rarr; <b>Task Scheduler</b> &rarr; <b>Create</b> &rarr; <b>Scheduled Task</b> &rarr; <b>User-defined script</b></li>
               <li><b>General:</b> name it <i>DeBarrier update</i>, set <b>User</b> to <b>root</b></li>
@@ -142,7 +143,7 @@
               <li><b>Task Settings</b> &rarr; <b>Run command</b>, paste:<br><input type="text" id="update-command" class="command" readonly></li>
               <li>Click <b>OK</b>, and confirm with your DSM password if asked.</li>
             </ol>
-            The task only does something when there's an update to install, so running it every 5 minutes costs nothing. To install right away, select the task and click <b>Run</b>. This box goes away once it has run.
+            The task only does something when there's an update to install, so running it every 5 minutes costs nothing. This box goes away once the task has run.
           </div>
         </div>
         <div class="section">

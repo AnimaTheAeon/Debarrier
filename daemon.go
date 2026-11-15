@@ -111,8 +111,13 @@ func runDaemon() {
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGTERM, syscall.SIGINT)
-	<-sig
-	logf("Stopping")
+	select {
+	case <-sig:
+		logf("Stopping")
+	case <-restartReq:
+		logf("Restarting to finish the update")
+		exitCode = restartCode
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	d.pubMu.Lock()
