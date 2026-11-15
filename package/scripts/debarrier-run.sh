@@ -13,6 +13,11 @@ UPD="$VAR/app-update"
 export SYNOPKG_PKGVAR="$VAR"
 export DEBARRIER_DATA="$VAR"
 export DEBARRIER_UPDATE_DIR="$UPD"
+# When the package's window folder belongs to this service (set up at install),
+# an update also replaces the window's own files, so the screens match the program.
+if [ -w "$DEST/ui" ]; then
+	export DEBARRIER_WINDOW_UPDATES=1
+fi
 
 mkdir -p "$UPD"
 
@@ -22,6 +27,11 @@ while :; do
 		[ -d "$UPD/current" ] && mv "$UPD/current" "$UPD/previous"
 		mv "$UPD/next" "$UPD/current"
 		echo "$(date) debarrier-run: switched to the downloaded update"
+		if [ -w "$DEST/ui" ] && [ -d "$UPD/current/ui" ]; then
+			# Keep the installed window once, so a failed update can put it back.
+			[ -d "$UPD/ui-backup" ] || cp -a "$DEST/ui" "$UPD/ui-backup"
+			cp -a "$UPD/current/ui/." "$DEST/ui/" && echo "$(date) debarrier-run: window files updated"
+		fi
 	fi
 
 	BIN="$DEST/bin/debarrier"
@@ -44,6 +54,9 @@ while :; do
 		echo "$(date) debarrier-run: the update stopped within 30 s (exit $rc); going back to the installed version"
 		rm -rf "$UPD/failed"
 		mv "$UPD/current" "$UPD/failed"
+		if [ -d "$UPD/ui-backup" ]; then
+			cp -a "$UPD/ui-backup/." "$DEST/ui/" && rm -rf "$UPD/ui-backup"
+		fi
 		continue
 	fi
 

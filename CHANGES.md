@@ -3,6 +3,11 @@
 Each version's "- " lines become its release notes on GitHub.
 Add a section here before bumping VERSION.
 
+## 1.0.8
+
+- Update now also replaces the window's own screens, so what you see matches the version that was installed (a new look no longer needs a hand-installed .spk). Install this version's .spk once by hand to turn it on
+- If DSM won't let DeBarrier do that, Settings says so
+
 ## 1.0.7
 
 - New look: Blades, with glossy silver blades you switch between with a click, ← → or a swipe. Pick it in Settings → Look

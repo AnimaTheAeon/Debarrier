@@ -528,6 +528,7 @@ function renderUpdate(u) {
   // Show the setup steps while the task isn't running and something needs it.
   const needTask = (u.auto || (!u.can_install_now && (u.requested || updateClicked))) && !u.task_ok;
   $("#update-setup").style.display = needTask ? "" : "none";
+  $("#update-window").style.display = u.can_install_now && !u.window_updates ? "" : "none";
   const cmd = $("#update-command");
   if (cmd.value !== u.command) cmd.value = u.command || "";
 }

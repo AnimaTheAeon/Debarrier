@@ -248,6 +248,7 @@ func updateStatus(auto bool) map[string]any {
 		// The task runs every 5 minutes; 30 minutes of silence means it isn't set up (or is off).
 		"task_ok":         task.Time > 0 && now-task.Time < 30*60,
 		"can_install_now": canInstallNow(),
+		"window_updates":  os.Getenv("DEBARRIER_WINDOW_UPDATES") != "",
 	}
 	if p := upd.progressNow(); p != nil {
 		out["progress"] = p
