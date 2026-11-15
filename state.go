@@ -74,7 +74,7 @@ func (s *Settings) clean() {
 	if s.Port < 1024 || s.Port > 65535 || s.Port == ctlPort() || s.Port == 8192 || s.Port == 8193 {
 		s.Port = 8191
 	}
-	if s.Theme != "green" {
+	if s.Theme != "green" && s.Theme != "blades" {
 		s.Theme = "ff"
 	}
 }

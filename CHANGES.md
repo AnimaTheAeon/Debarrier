@@ -3,6 +3,11 @@
 Each version's "- " lines become its release notes on GitHub.
 Add a section here before bumping VERSION.
 
+## 1.0.7
+
+- New look: Blades, with glossy silver blades you switch between with a click, ← → or a swipe. Pick it in Settings → Look
+- The Box of X look is now called Xbox
+
 ## 1.0.6
 
 - Update now installs by itself, with a progress bar and no Task Scheduler setup. The scheduled task is now optional, for installing updates while you're away
