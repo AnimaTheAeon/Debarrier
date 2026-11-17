@@ -652,23 +652,36 @@ function applyConfigToForm() {
 
 let saveTimer = null;
 let pending = {};
+// Every change is numbered, so a save's reply never undoes a newer change
+// (picking a second theme while the first is still saving).
+let changeNo = 0;
+const newest = {};
 function queueSave(changes) {
+  changeNo++;
+  for (const k of Object.keys(changes)) newest[k] = [changeNo, changes[k]];
   Object.assign(pending, changes);
   clearTimeout(saveTimer);
   saveTimer = setTimeout(flushSave, 300);
 }
+function withNewer(reply, upTo) {
+  for (const [k, [no, v]] of Object.entries(newest)) {
+    if (no > upTo) reply[k] = v; else delete newest[k];
+  }
+  return reply;
+}
 async function flushSave() {
   const changes = pending; pending = {};
   if (!Object.keys(changes).length) return;
+  const upTo = changeNo;
   try {
-    config = await api("config", changes);
+    config = withNewer(await api("config", changes), upTo);
     applyConfigToForm();
     $$(".page.active .saved").forEach((s) => { s.classList.add("show"); setTimeout(() => s.classList.remove("show"), 1200); });
     refreshStatus();
   } catch (e) {
     if (e.message !== "auth" && e.message !== "down") {
       alert(e.message);
-      try { config = await api("config"); applyConfigToForm(); } catch (e2) { /* ignore */ }
+      try { config = withNewer(await api("config"), upTo); applyConfigToForm(); } catch (e2) { /* ignore */ }
     }
   }
 }

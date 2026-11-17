@@ -3,6 +3,10 @@
 Each version's "- " lines become its release notes on GitHub.
 Add a section here before bumping VERSION.
 
+## 1.0.14
+
+- Picking a second theme while the first was still saving no longer flips back to the first one for a moment.
+
 ## 1.0.13
 
 - Xbox theme: every page now has the page bar along the bottom, one tab per page, next to Back. It is hidden on the home screen.
