@@ -3,6 +3,11 @@
 Each version's "- " lines become its release notes on GitHub.
 Add a section here before bumping VERSION.
 
+## 1.0.13
+
+- Xbox theme: every page now has the page bar along the bottom, one tab per page, next to Back. It is hidden on the home screen.
+- Xbox theme: opening a page from the orb now fades through a dark green veil instead of a bright flash.
+
 ## 1.0.12
 
 - Package Center no longer shows developer or support web links; the developer is shown as DeBarrier.
