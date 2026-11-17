@@ -3,6 +3,10 @@
 Each version's "- " lines become its release notes on GitHub.
 Add a section here before bumping VERSION.
 
+## 1.0.12
+
+- Package Center no longer shows developer or support web links; the developer is shown as DeBarrier.
+
 ## 1.0.11
 
 - Check now: messages say "update server" and never include a web address.
