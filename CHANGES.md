@@ -3,6 +3,10 @@
 Each version's "- " lines become its release notes on GitHub.
 Add a section here before bumping VERSION.
 
+## 1.0.10
+
+- New look: Liquid Glass. Dark frosted glass, capsule buttons and fields, switches instead of check boxes, and a menu pill that glides between pages. Pick it in Settings → Look. The other three looks are unchanged.
+
 ## 1.0.9
 
 - Activity's column headings (Result, Site, Engine, Took, When) stand out as a heading bar, in every look
