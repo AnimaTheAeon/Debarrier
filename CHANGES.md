@@ -3,6 +3,12 @@
 Each version's "- " lines become its release notes on GitHub.
 Add a section here before bumping VERSION.
 
+## 1.0.11
+
+- Check now: messages say "update server" and never include a web address.
+- The "what's new" link is now a What's new section that shows the notes on the page.
+- "Install updates automatically" no longer names where updates come from.
+
 ## 1.0.10
 
 - New look: Liquid Glass. Dark frosted glass, capsule buttons and fields, switches instead of check boxes, and a menu pill that glides between pages. Pick it in Settings → Look. The other three looks are unchanged.

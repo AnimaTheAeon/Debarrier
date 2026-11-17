@@ -41,7 +41,6 @@ const (
 
 type Release struct {
 	Version string `json:"version"`
-	Page    string `json:"page"`
 	SpkURL  string `json:"spk_url"`
 	SpkName string `json:"spk_name"`
 	SHA256  string `json:"sha256"`
@@ -51,7 +50,7 @@ type Release struct {
 
 // Files in the data folder.
 const (
-	fileCheck   = "update_check.json"   // service: what GitHub had last time
+	fileCheck   = "update_check.json"   // service: what the update server had last time
 	fileRequest = "update_request.json" // service: "Update now" was pressed
 	fileResult  = "update_result.json"  // task: how the last install went
 	fileTaskRun = "update_task.json"    // task: when it last ran
@@ -115,19 +114,34 @@ func curl(args ...string) ([]byte, error) {
 	cmd.Stderr = &stderr
 	out, err := cmd.Output()
 	if err != nil {
-		msg := strings.TrimSpace(stderr.String())
-		if msg == "" {
-			msg = "Couldn't reach GitHub"
-		}
-		return nil, errors.New(msg)
+		return nil, curlError(err, stderr.String())
 	}
 	return out, nil
+}
+
+// curlError turns a failed curl run into a plain message. curl's own text
+// names the server, so it is never shown.
+func curlError(err error, stderr string) error {
+	code := -1
+	var ee *exec.ExitError
+	if errors.As(err, &ee) {
+		code = ee.ExitCode()
+	}
+	switch {
+	case code == 22 && strings.Contains(stderr, "404"):
+		return errors.New("No releases yet")
+	case code == 22:
+		return errors.New("The update server answered with an error. Try again later.")
+	case code == 28:
+		return errors.New("The update server took too long to answer. Try again later.")
+	default:
+		return errors.New("Couldn't reach the update server. Check the internet connection and try again.")
+	}
 }
 
 func parseRelease(data []byte) (*Release, error) {
 	var j struct {
 		Tag    string `json:"tag_name"`
-		URL    string `json:"html_url"`
 		Body   string `json:"body"`
 		Assets []struct {
 			Name   string `json:"name"`
@@ -137,14 +151,14 @@ func parseRelease(data []byte) (*Release, error) {
 		} `json:"assets"`
 	}
 	if err := json.Unmarshal(data, &j); err != nil {
-		return nil, fmt.Errorf("Unexpected answer from GitHub: %v", err)
+		return nil, errors.New("The update server sent an answer DeBarrier couldn't read. Try again later.")
 	}
 	if j.Tag == "" {
-		return nil, errors.New("GitHub's answer had no version")
+		return nil, errors.New("The update server's answer had no version")
 	}
 	for _, a := range j.Assets {
 		if strings.HasSuffix(a.Name, "-x86_64.spk") && a.URL != "" {
-			r := &Release{Version: strings.TrimLeft(j.Tag, "vV"), Page: j.URL, SpkURL: a.URL, SpkName: filepath.Base(a.Name), Notes: j.Body, Size: a.Size}
+			r := &Release{Version: strings.TrimLeft(j.Tag, "vV"), SpkURL: a.URL, SpkName: filepath.Base(a.Name), Notes: j.Body, Size: a.Size}
 			if d, ok := strings.CutPrefix(a.Digest, "sha256:"); ok {
 				r.SHA256 = strings.ToLower(d)
 			}
@@ -158,9 +172,6 @@ func latestRelease() (*Release, error) {
 	url := envOr("DEBARRIER_RELEASE_URL", "https://api.github.com/repos/"+repo+"/releases/latest")
 	data, err := curl("--max-time", "60", "-H", "Accept: application/vnd.github+json", url)
 	if err != nil {
-		if strings.Contains(err.Error(), "404") {
-			return nil, errors.New("No releases on GitHub yet")
-		}
 		return nil, err
 	}
 	return parseRelease(data)
@@ -255,7 +266,7 @@ func updateStatus(auto bool) map[string]any {
 	}
 	if c.Latest != nil {
 		out["latest"] = c.Latest.Version
-		out["page"] = c.Latest.Page
+		out["notes"] = c.Latest.Notes
 		out["available"] = isNewer(c.Latest.Version, version)
 	} else {
 		out["available"] = false
@@ -343,7 +354,7 @@ func runUpdate(args []string) int {
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "Update check failed:", err)
 		if asked {
-			recordResult(false, installed, req.Version, "Couldn't reach GitHub: "+err.Error())
+			recordResult(false, installed, req.Version, "Couldn't check for updates: "+err.Error())
 			_ = os.Remove(dataPath(fileRequest))
 		}
 		return 1
@@ -425,7 +436,7 @@ func install(r *Release) error {
 			return err
 		}
 		if hex.EncodeToString(h.Sum(nil)) != r.SHA256 {
-			return errors.New("The download didn't match GitHub's checksum")
+			return errors.New("The download didn't match its checksum")
 		}
 	}
 	if os.Getenv("DEBARRIER_UPDATE_TEST") == "1" {
@@ -560,11 +571,7 @@ wait:
 		select {
 		case err := <-done:
 			if err != nil {
-				msg := strings.TrimSpace(stderr.String())
-				if msg == "" {
-					msg = "couldn't reach GitHub"
-				}
-				return fmt.Errorf("Download failed: %s", msg)
+				return fmt.Errorf("Download failed: %s", curlError(err, stderr.String()))
 			}
 			break wait
 		case <-tick.C:
@@ -592,7 +599,7 @@ wait:
 			return err
 		}
 		if hex.EncodeToString(h.Sum(nil)) != r.SHA256 {
-			return errors.New("The download didn't match GitHub's checksum. Nothing was changed.")
+			return errors.New("The download didn't match its checksum. Nothing was changed.")
 		}
 	}
 	outer := filepath.Join(work, "outer")
@@ -619,7 +626,7 @@ wait:
 		return fmt.Errorf("The new program won't start: %v", err)
 	}
 	if strings.TrimSpace(string(said)) != r.Version {
-		return errors.New("The downloaded program isn't the version GitHub listed. Nothing was changed.")
+		return errors.New("The downloaded program isn't the version that was offered. Nothing was changed.")
 	}
 	next := filepath.Join(dir, "next")
 	_ = os.RemoveAll(next)

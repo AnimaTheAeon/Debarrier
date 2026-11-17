@@ -508,14 +508,18 @@ function renderUpdate(u) {
   const checked = u.checked_at ? ` <span class="dim small">· checked ${ago(u.now - u.checked_at)}</span>` : "";
   const cur = `Installed ${esc(u.current)}`;
   const waited = u.requested_at ? u.now - u.requested_at : 0;
-  if (u.requested && !u.task_ok) st.innerHTML = `${cur} · <span class="bad">${esc(u.requested)} is waiting for the update task</span> <span class="dim small">It hasn't run yet. Set it up below, or install the .spk from GitHub yourself.</span>`;
+  if (u.requested && !u.task_ok) st.innerHTML = `${cur} · <span class="bad">${esc(u.requested)} is waiting for the update task</span> <span class="dim small">It hasn't run yet. Set it up below, or install the new DeBarrier package in Package Center yourself.</span>`;
   else if (u.requested && waited > 15 * 60) st.innerHTML = `${cur} · <span class="bad">Installing ${esc(u.requested)} is taking too long</span> <span class="dim small">Check the task's result in Task Scheduler, or View Log</span>`;
   else if (u.requested) st.innerHTML = `${cur} · <span class="warn">Installing ${esc(u.requested)}…</span> <span class="dim small">within 5 minutes; DeBarrier restarts by itself</span>`;
-  else if (u.checking) st.innerHTML = `${cur} · <span class="warn">Checking GitHub…</span>`;
-  else if (u.available) st.innerHTML = `${cur} · <span class="warn">Version ${esc(u.latest)} is out</span> <a href="${esc(u.page)}" target="_blank" rel="noopener">what's new</a>${checked}`;
-  else if (u.error) st.innerHTML = `${cur} · <span class="bad">Couldn't check GitHub</span> <span class="dim small">${esc(u.error)}</span>${checked}`;
+  else if (u.checking) st.innerHTML = `${cur} · <span class="warn">Checking for updates…</span>`;
+  else if (u.available) st.innerHTML = `${cur} · <span class="warn">Version ${esc(u.latest)} is out</span>${checked}`;
+  else if (u.error) st.innerHTML = `${cur} · <span class="bad">Couldn't check for updates</span> <span class="dim small">${esc(u.error)}</span>${checked}`;
   else if (u.latest) st.innerHTML = `${cur} · <span class="good">Up to date</span>${checked}`;
   else st.innerHTML = cur + checked;
+  const notes = $("#update-notes");
+  const text = u.available && u.notes ? u.notes.trim() : "";
+  notes.style.display = text ? "" : "none";
+  if (notes.dataset.text !== text) { notes.dataset.text = text; $("#update-notes-text").textContent = text; }
   $("#update-check").disabled = !!u.checking;
   const now = $("#update-now");
   now.style.display = u.available ? "" : "none";

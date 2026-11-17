@@ -1,3 +1,3 @@
-module github.com/AnimaTheAeon/DeBarrier
+module debarrier
 
 go 1.22
