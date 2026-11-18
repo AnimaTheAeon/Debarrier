@@ -3,6 +3,10 @@
 Each version's "- " lines become its release notes on GitHub.
 Add a section here before bumping VERSION.
 
+## 1.0.15
+
+- The Liquid Glass look is now called Dark Glass. Nothing else changes: if you were using it, you still are.
+
 ## 1.0.14
 
 - Picking a second theme while the first was still saving no longer flips back to the first one for a moment.
@@ -24,7 +28,7 @@ Add a section here before bumping VERSION.
 
 ## 1.0.10
 
-- New look: Liquid Glass. Dark frosted glass, capsule buttons and fields, switches instead of check boxes, and a menu pill that glides between pages. Pick it in Settings → Look. The other three looks are unchanged.
+- New look: Dark Glass. Dark frosted glass, capsule buttons and fields, switches instead of check boxes, and a menu pill that glides between pages. Pick it in Settings → Look. The other three looks are unchanged.
 
 ## 1.0.9
 
@@ -38,7 +42,7 @@ Add a section here before bumping VERSION.
 ## 1.0.7
 
 - New look: Blades, with glossy silver blades you switch between with a click, ← → or a swipe. Pick it in Settings → Look
-- The Box of X look is now called Xbox
+- The Xbox look is now called Xbox
 
 ## 1.0.6
 

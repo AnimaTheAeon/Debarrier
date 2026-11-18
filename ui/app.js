@@ -62,7 +62,7 @@ function hideOverlay() { $("#overlay").classList.remove("open"); }
 
 // ---------- menu ----------
 
-/** Liquid Glass: move the menu's selection pill under the open page. The
+/** Dark Glass: move the menu's selection pill under the open page. The
  * pill is the menu's ::before, so it glides there with a CSS transition. */
 function glassPill() {
   const nav = $("#menu");
@@ -296,7 +296,7 @@ for (const type of ["mousedown", "mouseup"]) {
 }
 addEventListener("resize", () => { if (isBlades()) bladesPlace(true); });
 
-// ---------- Box of X look ----------
+// ---------- Xbox look ----------
 
 let greenHome = true;
 let greenCursor = 0;

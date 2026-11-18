@@ -10,7 +10,7 @@ DeBarrier runs two engines in Container Manager and passes each request to the o
 If one can't get through a site, DeBarrier tries the other and remembers which engine works for that site.
 POST requests and sessions always go to FlareSolverr, because Byparr only loads pages.
 
-The window opens from the DSM main menu (administrators only) and uses the same FFVII menu and Box of X looks as
+The window opens from the DSM main menu (administrators only) and uses the same FFVII menu and Xbox looks as
 Materia and Jenova. It has three pages: Status (engines, Try a site, and the address for Materia), Activity and Settings.
 Activity keeps only each site's host and path, never the query string, so passkeys aren't stored.
 
