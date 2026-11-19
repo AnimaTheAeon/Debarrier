@@ -3,6 +3,11 @@
 Each version's "- " lines become its release notes on GitHub.
 Add a section here before bumping VERSION.
 
+## 1.0.17
+
+- MC360 now always opens on the menu of the blade you're on (switching looks used to drop you straight onto the page, with the blades parted off the screen until you clicked the blade's edge). It also fits tall or narrow windows: it scales to the window's width as well as its height and centres itself, and it re-checks the size whenever it draws.
+- The window's new screens need this version's .spk installed (Package Center > Manual Install, or the scheduled update task).
+
 ## 1.0.16
 
 - New look: MC360. The blades from the MC360 dashboard skin, one per page (Status, Activity, Settings, Log), each with a menu of what that page holds. Pick an entry and the page opens on the blade and jumps to that part of it, with every button it has in the other looks. Left and Right change blades, Up and Down move, Enter opens, Esc goes back. Three skins (Default, Glass, Carbon), the skin's sounds with a volume control, and Calmer motion for a still background. Press G or the Y button for the guide: look, skin, sounds and updates. Pick it under Settings > Look.
