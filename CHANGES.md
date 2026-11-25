@@ -3,6 +3,10 @@
 Each version's "- " lines become its release notes on GitHub.
 Add a section here before bumping VERSION.
 
+## 1.0.19
+
+- DeBarrier always opens on Status. Before, it reopened whichever page you were last on (a reload on Settings kept bringing you back to Settings)
+
 ## 1.0.18
 
 - Fixed: in MC360, pointing at a blade or a menu entry could fill it with a solid blue block, and the menu text came out heavy and bold. The look no longer picks up the app's own button and text styles.
